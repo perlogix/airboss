@@ -100,6 +100,9 @@ func (s *Subprocess) Start() (int, error) {
 	ready := make(chan bool)
 	go s.log(ready)
 	stdin, err := s.cmd.StdinPipe()
+	if err != nil {
+		return -1, err
+	}
 	defer stdin.Close()
 	<-ready
 	err = s.cmd.Start()
@@ -149,10 +152,7 @@ func (s *Subprocess) Stop() error {
 	s.RC = s.cmd.ProcessState.ExitCode()
 	s.parent.processStop(s.PID)
 	s.Success = func() bool {
-		if s.RC == 0 {
-			return true
-		}
-		return false
+		return s.RC == 0
 	}()
 	s.StopTime = time.Now()
 	s.Duration = (s.StopTime.Sub(s.StartTime) + s.Duration) * time.Millisecond
@@ -251,6 +251,9 @@ func (s *Subprocess) watch() {
 			}
 			s.OpenFiles = of
 			childs, err := p.Children()
+			if err != nil {
+				s.Errors <- err
+			}
 			var children []int32
 			for _, c := range childs {
 				children = append(children, c.Pid)
@@ -258,7 +261,6 @@ func (s *Subprocess) watch() {
 			s.Children = children
 		}
 	}
-	return
 }
 
 func (s *Subprocess) log(ready chan bool) {

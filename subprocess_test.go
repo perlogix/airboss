@@ -30,7 +30,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	f.Chmod(0777)
+	err = f.Chmod(0755)
+	if err != nil {
+		panic(err)
+	}
 	f.Close()
 	p = NewProcessManager()
 	sub, err = p.Fork("./" + fname)
@@ -41,10 +44,8 @@ func TestMain(m *testing.M) {
 	sub.Stdin.WriteString("hello!")
 	go func() {
 		for {
-			select {
-			case e := <-sub.Errors:
-				os.Stderr.WriteString(e.Error())
-			}
+			e := <-sub.Errors
+			os.Stderr.WriteString(e.Error())
 			time.Sleep(10 * time.Millisecond)
 		}
 	}()
